@@ -10,6 +10,11 @@ import Lifelines from "../components/LifeLines";
 import { useNavigate } from "react-router-dom";
 import AudienceModal from "../components/AudienceModal";
 import PhoneFriendModal from "../components/PhoneFriendModal";
+import soundManager from "../utils/soundManager";
+import Timer from "../components/Timer";
+import bgImage from "../assets/images/bg.jpg";
+import PrizeLadder from "../components/PrizeLadder";
+import QuestionCard from "../components/QuestionCard";
 
 const PlayGame = () => {
   const navigate = useNavigate();
@@ -41,6 +46,13 @@ const [showAudience, setShowAudience] = useState(false);
 
         setGameId(data.gameId);
         setQuestion(data.question);
+
+         // 🔊 Play game start sound
+    soundManager.playEffect("/sounds/start.mp3");
+
+    // 🎵 Start thinking music
+    soundManager.playBackground("/sounds/thinking.mp3");
+
       } catch (error) {
         toast.error(
           error.response?.data?.message || "Failed to start game"
@@ -53,6 +65,15 @@ const [showAudience, setShowAudience] = useState(false);
     createGame();
   }, []);
 
+  // Stop background music when leaving page
+  // ===========================
+  useEffect(() => {
+    return () => {
+      soundManager.stopBackground();
+    };
+  }, []);
+
+
 
 //handle 50 50
 const handleFifty = async () => {
@@ -62,6 +83,8 @@ const handleFifty = async () => {
     setRemainingIndexes(data.remainingIndexes);
 
     setFiftyUsed(true);
+
+   soundManager.playEffect("/sounds/fifty_fifty.mp3");
 
     toast.success("50:50 Activated!");
 
@@ -79,31 +102,52 @@ const handleFifty = async () => {
       const data = await submitAnswer(gameId, index);
 
       if (!data.success) {
-        toast.error("Wrong Answer!");
-        setAmountWon(data.amountWon);
-        setGameOver(true);
-        return;
+          soundManager.stopBackground();
+
+    soundManager.playEffect("/sounds/wrong.mp3");
+
+   toast.error("Wrong Answer!");
+
+setTimeout(() => {
+  soundManager.playEffect("/sounds/gameover.mp3");
+
+  setAmountWon(data.amountWon);
+  setGameOver(true);
+}, 1500);
+return;
       }
 
       if (data.winner) {
-        toast.success("🎉 Congratulations! You won the game!");
-        setAmountWon(data.amountWon);
-        setGameOver(true);
-        return;
+        soundManager.stopBackground();
+
+    soundManager.playEffect("/sounds/win.mp3");
+
+    toast.success("🎉 Congratulations! You won the game!");
+
+    setAmountWon(data.amountWon);
+    setGameOver(true);
+
+    return;
       }
 
-      toast.success("Correct Answer!");
+     // Stop thinking music
+soundManager.stopBackground();
+// Play correct answer sound
+soundManager.playEffect("/sounds/correct.mp3");
+toast.success("Correct Answer!");
 
      setTimeout(() => {
   setQuestion(data.nextQuestion);
   setCurrentQuestion((prev) => prev + 1);
   setAmountWon(data.amountWon);
   setSelectedAnswer(null);
-
-  // Reset the hidden options for the next question
+// Reset the hidden options for the next question
   setRemainingIndexes(null);
 
-}, 1000);
+   // 🔊 Restart thinking music for next question
+  soundManager.playBackground("/sounds/thinking.mp3");
+
+}, 2500);
 
     } catch (error) {
       toast.error("Something went wrong");
@@ -111,6 +155,10 @@ const handleFifty = async () => {
   };
 
 
+//Timer
+const handleTimeout = () => {
+  setGameOver(true);
+};
 
 //ask the audience function 
 const handleAudience = async () => {
@@ -150,13 +198,16 @@ const handlePhoneFriend = async () => {
     // Calling...
     setTimeout(() => {
       setPhoneStage("ringing");
-    }, 1500);
+      soundManager.playEffect("/sounds/ringing.mp3");
+    }, 500);
 
     // Friend thinking
     setTimeout(() => {
-      setPhoneStage("thinking");
-    }, 3500);
+  soundManager.stopEffect();// Stop the ringing sound
+//setPhoneStage("Hello");
+  setPhoneStage("thinking");
 
+}, 3500);
     // Friend answers
     setTimeout(() => {
       setPhoneStage("speaking");
@@ -177,7 +228,11 @@ const handlePhoneFriend = async () => {
     try {
       const data = await walkAway(gameId);
 
-      toast.success(data.message);
+      soundManager.stopBackground();
+
+soundManager.playEffect("/sounds/walkaway.mp3");
+
+toast.success(data.message);
 
       navigate("/dashboard");
     } catch (error) {
@@ -223,7 +278,16 @@ const handlePhoneFriend = async () => {
   }
 
   return (
-    <div className="min-h-screen p-8">
+    <div
+    className="min-h-screen bg-cover bg-center bg-no-repeat"
+    style={{
+      backgroundImage: `url(${bgImage})`,
+    }}
+  >
+
+{/* Dark Overlay */}
+<div className="min-h-screen bg-black/60 p-8">
+
 
       <div className="max-w-5xl mx-auto">
 
@@ -231,9 +295,15 @@ const handlePhoneFriend = async () => {
           Who Wants To Be A Millionaire
         </h1>
 
-        <h2 className="text-center mb-8">
-          Question {currentQuestion} of 15
-        </h2>
+        <h2 className="text-2xl font-bold">
+    Question {currentQuestion} of 15
+  </h2>
+
+  <Timer
+    question={question}
+    gameOver={gameOver}
+    onTimeout={handleTimeout}
+  />
 
         <div className="bg-blue-950 rounded-xl p-8">
 
@@ -246,47 +316,14 @@ const handlePhoneFriend = async () => {
     onPhone={handlePhoneFriend}
     
   />
-
-
-
-          <h2 className="text-2xl mt-6 mb-8">
-            {question.question}
-          </h2>
-
-          <div className="grid gap-4">
-
-  {question.options.map((option, index) => {
-
-    if (
-      remainingIndexes &&
-      !remainingIndexes.includes(index)
-    ) {
-      return null;
-    }
-
-    return (
-      <button
-        key={index}
-        onClick={() => handleAnswer(index)}
-        disabled={selectedAnswer !== null}
-        className={`
-          p-4
-          rounded-lg
-          text-left
-          transition
-          ${
-            selectedAnswer === index
-              ? "bg-yellow-400 text-black"
-              : "bg-blue-900 hover:bg-blue-800"
-          }
-        `}
-      >
-        {String.fromCharCode(65 + index)}. {option}
-      </button>
-    );
-  })}
-
-</div>
+<QuestionCard
+  question={question.question}
+  options={question.options}
+  selectedAnswer={selectedAnswer}
+  onAnswerSelect={handleAnswer}
+  disabled={selectedAnswer !== null}
+  remainingIndexes={remainingIndexes}
+/>
 
 <div className="mt-8 flex justify-between items-center">
 
@@ -304,6 +341,14 @@ const handlePhoneFriend = async () => {
           </div>
 
         </div>
+
+
+        
+
+      </div>
+
+
+      
 
       </div>
  <AudienceModal

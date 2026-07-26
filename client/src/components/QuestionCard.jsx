@@ -1,4 +1,4 @@
-import AnswerOption from "./AnswerOption";
+import AnswerOptions from "./AnswerOptions";
 
 const QuestionCard = ({
   question,
@@ -6,25 +6,42 @@ const QuestionCard = ({
   selectedAnswer,
   onAnswerSelect,
   disabled,
+  remainingIndexes,
 }) => {
   return (
-    <div className="bg-blue-950 rounded-xl p-8 shadow-lg">
+    <div className="bg-blue-950/90 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border-2 border-blue-700">
 
-      <h2 className="text-2xl font-bold mb-8 text-center">
-        {question}
-      </h2>
+      {/* Question */}
+      <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 rounded-2xl p-6 border border-yellow-500 mb-8">
+        <h2 className="text-3xl font-bold text-center text-white">
+          {question}
+        </h2>
+      </div>
 
-      <div className="grid gap-4">
+      {/* Answers */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        {options.map((option) => (
-          <AnswerOption
-            key={option}
-            option={option}
-            selected={selectedAnswer === option}
-            onClick={() => onAnswerSelect(option)}
-            disabled={disabled}
-          />
-        ))}
+        {options.map((option, index) => {
+
+          // Hide removed answers after 50:50
+          if (
+            remainingIndexes &&
+            !remainingIndexes.includes(index)
+          ) {
+            return null;
+          }
+
+          return (
+            <AnswerOptions
+              key={index}
+              option={option}
+              index={index}
+              selected={selectedAnswer === index}
+              onClick={() => onAnswerSelect(index)}
+              disabled={disabled}
+            />
+          );
+        })}
 
       </div>
 
