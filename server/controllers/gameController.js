@@ -81,6 +81,7 @@ export const submitAnswer = async (req, res) => {
     const question = await Question.findById(questionId);
 
     const isCorrect = question.correctAnswer === answerIndex;
+    const correctAnswer = question.correctAnswer;
 
     game.answers.push({
       questionId,
@@ -97,6 +98,7 @@ export const submitAnswer = async (req, res) => {
         success: false,
         message: "Wrong Answer",
         amountWon: game.amountWon,
+        correctAnswer,
       });
     }
 
@@ -113,6 +115,7 @@ export const submitAnswer = async (req, res) => {
         success: true,
         winner: true,
         amountWon: game.amountWon,
+         correctAnswer,
       });
     }
 
@@ -126,6 +129,7 @@ export const submitAnswer = async (req, res) => {
       success: true,
       nextQuestion,
       amountWon: game.amountWon,
+       correctAnswer,
     });
 
   } catch (error) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import  { useEffect, useState, useRef }  from "react";
 import { toast } from "react-toastify";
 import { startGame, 
   submitAnswer, 
@@ -15,6 +15,8 @@ import Timer from "../components/Timer";
 import bgImage from "../assets/images/bg.jpg";
 import PrizeLadder from "../components/PrizeLadder";
 import QuestionCard from "../components/QuestionCard";
+import GameOverModal from "../components/GameOverModal";
+import { getSafePrize } from "../utils/safePrize";
 
 const PlayGame = () => {
   const navigate = useNavigate();
@@ -23,7 +25,9 @@ const PlayGame = () => {
   const [gameId, setGameId] = useState("");
   const [question, setQuestion] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(1);
-  const [amountWon, setAmountWon] = useState(0);
+  //const [amountWon, setAmountWon] = useState(0);
+  const [currentPrize, setCurrentPrize] = useState(0);
+const [safePrize, setSafePrize] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [gameOver, setGameOver] = useState(false);
 const [remainingIndexes, setRemainingIndexes] = useState(null);
@@ -37,7 +41,24 @@ const [phoneStage, setPhoneStage] = useState("calling");
 const [showPhoneModal, setShowPhoneModal] = useState(false);
 const [audiencePoll, setAudiencePoll] = useState(null);
 const [showAudience, setShowAudience] = useState(false);
-  
+const [correctAnswer, setCorrectAnswer] = useState(null);
+const [showResult, setShowResult] = useState(false);
+const gameOverTimer = useRef(null);
+
+//change theme
+useEffect(() => {
+  const oldBackground = document.body.style.background;
+
+  document.body.style.background = `
+    linear-gradient(rgba(0,0,0,.6), rgba(0,0,0,.6)),
+    url(${bgImage}) center/cover fixed no-repeat
+  `;
+
+  return () => {
+    document.body.style.background = oldBackground;
+  };
+}, []);
+
   // Start Game
   useEffect(() => {
     const createGame = async () => {
@@ -46,6 +67,8 @@ const [showAudience, setShowAudience] = useState(false);
 
         setGameId(data.gameId);
         setQuestion(data.question);
+        setCurrentPrize(0);
+setSafePrize(0);
 
          // 🔊 Play game start sound
     soundManager.playEffect("/sounds/start.mp3");
@@ -65,15 +88,17 @@ const [showAudience, setShowAudience] = useState(false);
     createGame();
   }, []);
 
+
   // Stop background music when leaving page
-  // ===========================
-  useEffect(() => {
-    return () => {
-      soundManager.stopBackground();
-    };
-  }, []);
+useEffect(() => {
+  return () => {
+    if (gameOverTimer.current) {
+      clearTimeout(gameOverTimer.current);
+    }
 
-
+    soundManager.stopAll();
+  };
+}, []);
 
 //handle 50 50
 const handleFifty = async () => {
@@ -100,52 +125,62 @@ const handleFifty = async () => {
 
     try {
       const data = await submitAnswer(gameId, index);
+      setCorrectAnswer(data.correctAnswer);
+      setShowResult(true);
 
-      if (!data.success) {
-          soundManager.stopBackground();
+     if (!data.success) {
+  soundManager.stopAll();
+  soundManager.playEffect("/sounds/wrong.mp3");
+  toast.error("Wrong Answer!");
 
-    soundManager.playEffect("/sounds/wrong.mp3");
+  gameOverTimer.current = setTimeout(() => {
+    soundManager.playEffect("/sounds/gameover.mp3");
 
-   toast.error("Wrong Answer!");
-
-setTimeout(() => {
-  soundManager.playEffect("/sounds/gameover.mp3");
-
-  setAmountWon(data.amountWon);
-  setGameOver(true);
-}, 1500);
-return;
-      }
-
-      if (data.winner) {
-        soundManager.stopBackground();
-
-    soundManager.playEffect("/sounds/win.mp3");
-
-    toast.success("🎉 Congratulations! You won the game!");
-
-    setAmountWon(data.amountWon);
+    setCurrentPrize(safePrize); // Player goes home with checkpoint money
     setGameOver(true);
+  }, 1500);
 
-    return;
-      }
+  return;
+}
+if (data.winner) {
+  soundManager.stopBackground();
 
+  soundManager.playEffect("/sounds/win.mp3");
+
+  toast.success("🎉 Congratulations! You won the game!");
+
+  setCurrentPrize(10000000);
+  setSafePrize(10000000);
+  setGameOver(true);
+
+  return;
+}
      // Stop thinking music
-soundManager.stopBackground();
+soundManager.stopAll();
+
 // Play correct answer sound
 soundManager.playEffect("/sounds/correct.mp3");
 toast.success("Correct Answer!");
 
      setTimeout(() => {
-  setQuestion(data.nextQuestion);
-  setCurrentQuestion((prev) => prev + 1);
-  setAmountWon(data.amountWon);
-  setSelectedAnswer(null);
-// Reset the hidden options for the next question
-  setRemainingIndexes(null);
+      
+ const nextQuestion = currentQuestion + 1;
 
-   // 🔊 Restart thinking music for next question
-  soundManager.playBackground("/sounds/thinking.mp3");
+setQuestion(data.nextQuestion);
+setCurrentQuestion(nextQuestion);
+
+setCurrentPrize(data.amountWon);
+
+// You just answered currentQuestion correctly
+const newSafePrize = getSafePrize(currentQuestion);
+setSafePrize(newSafePrize);
+
+setSelectedAnswer(null);
+setCorrectAnswer(null);
+setShowResult(false);
+setRemainingIndexes(null);
+
+soundManager.playBackground("/sounds/thinking.mp3");
 
 }, 2500);
 
@@ -157,7 +192,18 @@ toast.success("Correct Answer!");
 
 //Timer
 const handleTimeout = () => {
-  setGameOver(true);
+  soundManager.stopAll();
+
+  soundManager.playEffect(
+    "/sounds/timeout.mp3",
+    1,
+    () => {
+      soundManager.playEffect("/sounds/gameover.mp3");
+
+      setCurrentPrize(safePrize);
+      setGameOver(true);
+    }
+  );
 };
 
 //ask the audience function 
@@ -180,7 +226,16 @@ const handleAudience = async () => {
   }
 };
 
+//handle game over function
+const handleGameOverClose = () => {
+  if (gameOverTimer.current) {
+    clearTimeout(gameOverTimer.current);
+  }
 
+  soundManager.stopAll();
+
+  navigate("/dashboard");
+};
 
 //phone a friend function
 const handlePhoneFriend = async () => {
@@ -228,8 +283,7 @@ const handlePhoneFriend = async () => {
     try {
       const data = await walkAway(gameId);
 
-      soundManager.stopBackground();
-
+      soundManager.stopAll();
 soundManager.playEffect("/sounds/walkaway.mp3");
 
 toast.success(data.message);
@@ -239,6 +293,7 @@ toast.success(data.message);
       toast.error("Unable to walk away");
     }
   };
+  
 
   if (loading) {
     return (
@@ -248,64 +303,42 @@ toast.success(data.message);
     );
   }
 
-  if (gameOver) {
-    return (
-      <div className="min-h-screen flex justify-center items-center">
-        <div className="bg-blue-950 p-10 rounded-xl text-center">
-
-          <h1 className="text-5xl font-bold text-red-500 mb-6">
-            Game Over
-          </h1>
-
-          <h2 className="text-3xl mb-8">
-            You won
-          </h2>
-
-          <p className="text-5xl text-yellow-400 mb-8">
-            ₦{amountWon.toLocaleString()}
-          </p>
-
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="bg-yellow-400 text-black px-8 py-3 rounded-lg font-bold"
-          >
-            Back to Dashboard
-          </button>
-
-        </div>
-      </div>
-    );
-  }
+ 
+  
 
   return (
-    <div
-    className="min-h-screen bg-cover bg-center bg-no-repeat"
-    style={{
-      backgroundImage: `url(${bgImage})`,
-    }}
-  >
+   <div
+  className="min-h-screen w-full overflow-x-hidden"
+  style={{
+    backgroundImage: `url(${bgImage})`,
+    backgroundSize: "cover/contain",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+    backgroundAttachment: "fixed",
+  }}
+>
 
 {/* Dark Overlay */}
-<div className="min-h-screen bg-black/60 p-8">
+<div className="flex-1 bg-black/60 px-4 py-6 sm:px-6 lg:px-8">
 
 
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto">
 
-        <h1 className="text-center text-4xl font-bold text-yellow-400 mb-4">
+        <h1 className="text-center text-2xl sm:text-3xl lg:text-5xl font-bold text-yellow-400 mb-4">
           Who Wants To Be A Millionaire
         </h1>
+  <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8 mt-6">
+    <div className="lg:col-span-3">
+  <div className="bg-blue-950/90 backdrop-blur-md rounded-3xl border-2 border-blue-700 p-8 shadow-2xl">
 
-        <h2 className="text-2xl font-bold">
-    Question {currentQuestion} of 15
-  </h2>
 
+  <div className="flex flex-wrap items-center justify-center gap-8 mb-8">
   <Timer
     question={question}
     gameOver={gameOver}
     onTimeout={handleTimeout}
   />
 
-        <div className="bg-blue-950 rounded-xl p-8">
 
            <Lifelines
     fiftyUsed={fiftyUsed}
@@ -316,41 +349,51 @@ toast.success(data.message);
     onPhone={handlePhoneFriend}
     
   />
+  </div>
+  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-center lg:text-left mb-4">
+    Question {currentQuestion} of 15
+  </h2>
 <QuestionCard
-  question={question.question}
+question={question.question}
   options={question.options}
   selectedAnswer={selectedAnswer}
   onAnswerSelect={handleAnswer}
   disabled={selectedAnswer !== null}
   remainingIndexes={remainingIndexes}
+  correctAnswer={correctAnswer}
+  showResult={showResult}
 />
 
-<div className="mt-8 flex justify-between items-center">
+<div className="mt-8 flex flex-col sm:flex-row gap-4 justify-between items-center">
 
             <button
               onClick={handleWalkAway}
-              className="bg-red-600 px-6 py-3 rounded-lg"
+              className="bg-red-600 hover:bg-red-700 transition px-5 sm:px-6 py-3 rounded-xl font-bold w-full sm:w-auto"
             >
               Walk Away
             </button>
 
-            <h2 className="text-2xl text-yellow-400">
-              ₦{amountWon.toLocaleString()}
+            <h2 className="text-xl sm:text-2xl lg:text-3xl text-yellow-400 font-bold">
+              ₦{currentPrize.toLocaleString()}
             </h2>
 
           </div>
 
+</div>
+</div>
+
+   {/*prize ladder*/}
+   <div className="lg:col-span-1 lg:sticky lg:top-6 self-start">
+
+    <PrizeLadder
+        currentQuestion={currentQuestion}
+    />
+
+</div>
+
         </div>
-
-
-        
-
-      </div>
-
-
-      
-
-      </div>
+</div>
+</div>
  <AudienceModal
       isOpen={showAudience}
       poll={audiencePoll}
@@ -363,6 +406,13 @@ toast.success(data.message);
   answer={phoneAnswer}
   confidence={phoneConfidence}
   onClose={() => setShowPhoneModal(false)}
+/>
+
+<GameOverModal
+  isOpen={gameOver}
+   winner={currentPrize === 10000000}
+  amountWon={currentPrize}
+  onClose={handleGameOverClose}
 />
     </div>
   );

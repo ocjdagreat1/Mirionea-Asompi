@@ -45,7 +45,7 @@ const questions = [
     question: "What is the capital city of France?",
     options: ["Madrid", "Berlin", "Paris", "Rome"],
     correctAnswer: 2,
-    prize: 5000,
+    prize: 4000,
     difficulty: "easy",
     category: "Geography"
   },

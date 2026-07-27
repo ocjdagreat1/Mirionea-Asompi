@@ -6,7 +6,9 @@ const QuestionCard = ({
   selectedAnswer,
   onAnswerSelect,
   disabled,
-  remainingIndexes,
+ remainingIndexes,
+  correctAnswer,
+  showResult,
 }) => {
   return (
     <div className="bg-blue-950/90 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border-2 border-blue-700">
@@ -33,13 +35,15 @@ const QuestionCard = ({
 
           return (
             <AnswerOptions
-              key={index}
-              option={option}
-              index={index}
-              selected={selectedAnswer === index}
-              onClick={() => onAnswerSelect(index)}
-              disabled={disabled}
-            />
+  key={index}
+  option={option}
+  index={index}
+  selected={selectedAnswer === index}
+  correct={correctAnswer === index}
+  showResult={showResult}
+  onClick={() => onAnswerSelect(index)}
+  disabled={disabled}
+/>
           );
         })}
 

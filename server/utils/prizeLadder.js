@@ -2,7 +2,7 @@ const prizeLadder = [
   { level: 1, prize: 500, difficulty: "easy" },
   { level: 2, prize: 1000, difficulty: "easy" },
   { level: 3, prize: 2000, difficulty: "easy" },
-  { level: 4, prize: 5000, difficulty: "easy" },
+  { level: 4, prize: 4000, difficulty: "easy" },
   { level: 5, prize: 10000, difficulty: "easy" },
 
   { level: 6, prize: 20000, difficulty: "medium" },

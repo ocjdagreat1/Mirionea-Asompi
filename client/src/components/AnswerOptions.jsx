@@ -1,65 +1,52 @@
-const AnswerOption = ({
+const AnswerOptions = ({
   option,
   index,
   selected,
+  correct,
+  showResult,
   onClick,
   disabled,
 }) => {
-  const letters = ["A", "B", "C", "D"];
+  let bgClass =
+    "bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 border-yellow-500 text-white hover:scale-105";
+
+  // Correct answer turns GREEN
+  if (showResult && correct) {
+    bgClass = "bg-green-600 border-green-400 text-white";
+  }
+
+  // Wrong selected answer turns RED
+  if (showResult && selected && !correct) {
+    bgClass = "bg-red-600 border-red-400 text-white";
+  }
 
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       className={`
-        w-full
-        flex
-        items-center
-        gap-4
+        relative
+        overflow-hidden
+        border-2
+        rounded-full
         px-6
         py-5
-        rounded-full
-        border-2
+        text-left
+        font-bold
         transition-all
-        duration-300
-        shadow-lg
-
-        ${
-          selected
-            ? "bg-yellow-400 text-black border-yellow-400 scale-105"
-            : "bg-gradient-to-r from-blue-950 via-blue-900 to-blue-950 border-yellow-500 hover:scale-105 hover:shadow-yellow-500/40"
-        }
-
-        ${disabled ? "opacity-70 cursor-not-allowed" : ""}
+        duration-500
+        ${bgClass}
       `}
     >
-      {/* Letter Circle */}
-      <div
-        className={`
-          w-10
-          h-10
-          rounded-full
-          flex
-          items-center
-          justify-center
-          font-bold
+      <div className="absolute top-2 left-5 w-16 h-4 bg-white/20 rounded-full blur-md"></div>
 
-          ${
-            selected
-              ? "bg-black text-yellow-400"
-              : "bg-yellow-400 text-black"
-          }
-        `}
-      >
-        {letters[index]}
-      </div>
-
-      {/* Option Text */}
-      <span className="text-lg font-semibold">
-        {option}
+      <span className="text-yellow-400 mr-3">
+        {String.fromCharCode(65 + index)}.
       </span>
+
+      {option}
     </button>
   );
 };
 
-export default AnswerOption;
+export default AnswerOptions;
