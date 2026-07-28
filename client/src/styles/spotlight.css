@@ -1,0 +1,65 @@
+.spotlight{
+    position:absolute;
+    width:500px;
+    height:500px;
+    border-radius:50%;
+    filter:blur(120px);
+    opacity:.28;
+}
+
+.spotlight-one{
+    background:#00bfff;
+    top:-150px;
+    left:-150px;
+    animation:moveOne 16s ease-in-out infinite alternate;
+}
+
+.spotlight-two{
+    background:#005eff;
+    right:-150px;
+    top:20%;
+    animation:moveTwo 18s ease-in-out infinite alternate;
+}
+
+.spotlight-three{
+    background:#ffd700;
+    bottom:-180px;
+    left:35%;
+    animation:moveThree 20s ease-in-out infinite alternate;
+}
+
+@keyframes moveOne{
+
+0%{
+transform:translate(0,0);
+}
+
+100%{
+transform:translate(220px,180px);
+}
+
+}
+
+@keyframes moveTwo{
+
+0%{
+transform:translate(0,0);
+}
+
+100%{
+transform:translate(-220px,-150px);
+}
+
+}
+
+@keyframes moveThree{
+
+0%{
+transform:translate(0,0);
+}
+
+100%{
+transform:translate(-120px,-220px);
+}
+
+}

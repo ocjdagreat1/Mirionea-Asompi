@@ -17,10 +17,15 @@ import PrizeLadder from "../components/PrizeLadder";
 import QuestionCard from "../components/QuestionCard";
 import GameOverModal from "../components/GameOverModal";
 import { getSafePrize } from "../utils/safePrize";
+import WalkAwayModal from "../components/WalkAwayModal";
+import FinalAnswerModal from "../components/FinalAnswerModal";
+import SpotlightBackground from "../components/SpotlightBackground";
+import "../styles/spotlight.css";
 
 const PlayGame = () => {
-  const navigate = useNavigate();
 
+
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [gameId, setGameId] = useState("");
   const [question, setQuestion] = useState(null);
@@ -34,7 +39,6 @@ const [remainingIndexes, setRemainingIndexes] = useState(null);
 const [fiftyUsed, setFiftyUsed] = useState(false);
 const [audienceUsed, setAudienceUsed] = useState(false);
 const [phoneUsed, setPhoneUsed] = useState(false);
-
 const [phoneAnswer, setPhoneAnswer] = useState("");
 const [phoneConfidence, setPhoneConfidence] = useState(0);
 const [phoneStage, setPhoneStage] = useState("calling");
@@ -44,6 +48,12 @@ const [showAudience, setShowAudience] = useState(false);
 const [correctAnswer, setCorrectAnswer] = useState(null);
 const [showResult, setShowResult] = useState(false);
 const gameOverTimer = useRef(null);
+const [showWalkAwayModal, setShowWalkAwayModal] = useState(false);
+const [gameResult, setGameResult] = useState("");
+const [showFinalAnswer, setShowFinalAnswer] = useState(false);
+const [pendingAnswer, setPendingAnswer] = useState(null);
+const [answerLocked, setAnswerLocked] = useState(false);
+
 
 //change theme
 useEffect(() => {
@@ -100,34 +110,33 @@ useEffect(() => {
   };
 }, []);
 
-//handle 50 50
-const handleFifty = async () => {
-  try {
-    const data = await useFiftyFifty(gameId);
 
-    setRemainingIndexes(data.remainingIndexes);
+//Handle answer
+ const handleAnswer = (index) => {
+  if (selectedAnswer !== null || showFinalAnswer) return;
 
-    setFiftyUsed(true);
-
-   soundManager.playEffect("/sounds/fifty_fifty.mp3");
-
-    toast.success("50:50 Activated!");
-
-  } catch (error) {
-    toast.error(error.response?.data?.message || "Unable to use 50:50");
-  }
+  setPendingAnswer(index);
+  setSelectedAnswer(index); // Highlight the selected option
+  setShowFinalAnswer(true);
 };
 
-  const handleAnswer = async (index) => {
-    if (selectedAnswer !== null) return;
+//confirm answer
+const confirmAnswer = async () => {
+  setShowFinalAnswer(false);
+  setAnswerLocked(true);
 
-    setSelectedAnswer(index);
+ // Keep the selected answer highlighted
+  soundManager.playBackground("/sounds/thinking.mp3");
+  await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    try {
-      const data = await submitAnswer(gameId, index);
-      setCorrectAnswer(data.correctAnswer);
-      setShowResult(true);
+  try {
+    const data = await submitAnswer(gameId, pendingAnswer);
 
+    setCorrectAnswer(data.correctAnswer);
+    setShowResult(true);
+
+    // 👇 Paste the rest of your existing logic here
+    
      if (!data.success) {
   soundManager.stopAll();
   soundManager.playEffect("/sounds/wrong.mp3");
@@ -137,6 +146,7 @@ const handleFifty = async () => {
     soundManager.playEffect("/sounds/gameover.mp3");
 
     setCurrentPrize(safePrize); // Player goes home with checkpoint money
+    setGameResult("wrong");
     setGameOver(true);
   }, 1500);
 
@@ -151,6 +161,7 @@ if (data.winner) {
 
   setCurrentPrize(10000000);
   setSafePrize(10000000);
+  setGameResult("winner");
   setGameOver(true);
 
   return;
@@ -176,6 +187,8 @@ const newSafePrize = getSafePrize(currentQuestion);
 setSafePrize(newSafePrize);
 
 setSelectedAnswer(null);
+setAnswerLocked(false);
+setPendingAnswer(null);
 setCorrectAnswer(null);
 setShowResult(false);
 setRemainingIndexes(null);
@@ -183,12 +196,17 @@ setRemainingIndexes(null);
 soundManager.playBackground("/sounds/thinking.mp3");
 
 }, 2500);
+  } catch (error) {
+    toast.error("Something went wrong");
+  }
+};
 
-    } catch (error) {
-      toast.error("Something went wrong");
-    }
-  };
-
+//cancel final answer
+const cancelFinalAnswer = () => {
+  setShowFinalAnswer(false);
+  setPendingAnswer(null);
+  setSelectedAnswer(null); // Remove the highlight
+};
 
 //Timer
 const handleTimeout = () => {
@@ -201,9 +219,30 @@ const handleTimeout = () => {
       soundManager.playEffect("/sounds/gameover.mp3");
 
       setCurrentPrize(safePrize);
+      setGameResult("timeout");
       setGameOver(true);
     }
   );
+};
+
+
+
+//handle 50 50
+const handleFifty = async () => {
+  try {
+    const data = await useFiftyFifty(gameId);
+
+    setRemainingIndexes(data.remainingIndexes);
+
+    setFiftyUsed(true);
+
+   soundManager.playEffect("/sounds/fifty_fifty.mp3");
+
+    toast.success("50:50 Activated!");
+
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Unable to use 50:50");
+  }
 };
 
 //ask the audience function 
@@ -226,16 +265,6 @@ const handleAudience = async () => {
   }
 };
 
-//handle game over function
-const handleGameOverClose = () => {
-  if (gameOverTimer.current) {
-    clearTimeout(gameOverTimer.current);
-  }
-
-  soundManager.stopAll();
-
-  navigate("/dashboard");
-};
 
 //phone a friend function
 const handlePhoneFriend = async () => {
@@ -278,22 +307,44 @@ const handlePhoneFriend = async () => {
 
 
 
+
 //walk away function 
-  const handleWalkAway = async () => {
+ const handleWalkAway = async () => {
     try {
-      const data = await walkAway(gameId);
+        const data = await walkAway(gameId);
 
-      soundManager.stopAll();
-soundManager.playEffect("/sounds/walkaway.mp3");
+        setShowWalkAwayModal(false);
 
-toast.success(data.message);
+        soundManager.stopAll();
 
-      navigate("/dashboard");
-    } catch (error) {
-      toast.error("Unable to walk away");
+   soundManager.playEffect(
+    "/sounds/walkaway.mp3",
+    1,
+    () => {
+        setTimeout(() => {
+          setGameResult("quit");
+            setGameOver(true);
+        }, 500);
     }
-  };
-  
+);
+        setCurrentPrize(data.amountWon);
+
+        toast.success(data.message);
+
+    } catch (error) {
+        toast.error("Unable to walk away");
+    }
+};
+  //handle game over function
+const handleGameOverClose = () => {
+  if (gameOverTimer.current) {
+    clearTimeout(gameOverTimer.current);
+  }
+
+  soundManager.stopAll();
+
+  navigate("/dashboard");
+};
 
   if (loading) {
     return (
@@ -308,7 +359,7 @@ toast.success(data.message);
 
   return (
    <div
-  className="min-h-screen w-full overflow-x-hidden"
+   className="relative min-h-screen w-full overflow-hidden"
   style={{
     backgroundImage: `url(${bgImage})`,
     backgroundSize: "cover/contain",
@@ -317,7 +368,7 @@ toast.success(data.message);
     backgroundAttachment: "fixed",
   }}
 >
-
+<SpotlightBackground />
 {/* Dark Overlay */}
 <div className="flex-1 bg-black/60 px-4 py-6 sm:px-6 lg:px-8">
 
@@ -336,6 +387,7 @@ toast.success(data.message);
   <Timer
     question={question}
     gameOver={gameOver}
+    paused={showFinalAnswer}
     onTimeout={handleTimeout}
   />
 
@@ -347,6 +399,7 @@ toast.success(data.message);
     onFifty={handleFifty}
     onAudience={handleAudience}
     onPhone={handlePhoneFriend}
+    disabled={showFinalAnswer || answerLocked}
     
   />
   </div>
@@ -366,12 +419,20 @@ question={question.question}
 
 <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-between items-center">
 
-            <button
-              onClick={handleWalkAway}
-              className="bg-red-600 hover:bg-red-700 transition px-5 sm:px-6 py-3 rounded-xl font-bold w-full sm:w-auto"
-            >
-              Walk Away
-            </button>
+           <button
+  disabled={showFinalAnswer || answerLocked}
+  onClick={() => setShowWalkAwayModal(true)}
+  className={`
+    px-5 py-3 rounded-xl font-bold transition
+    ${
+      showFinalAnswer || answerLocked
+        ? "bg-gray-600 cursor-not-allowed opacity-50"
+        : "bg-red-600 hover:bg-red-700"
+    }
+  `}
+>
+    Walk Away
+</button>
 
             <h2 className="text-xl sm:text-2xl lg:text-3xl text-yellow-400 font-bold">
               ₦{currentPrize.toLocaleString()}
@@ -408,11 +469,26 @@ question={question.question}
   onClose={() => setShowPhoneModal(false)}
 />
 
+
+<WalkAwayModal
+    isOpen={showWalkAwayModal}
+    onCancel={() => setShowWalkAwayModal(false)}
+    onConfirm={handleWalkAway}
+     
+/>
+
+<FinalAnswerModal
+  isOpen={showFinalAnswer}
+  answer={question?.options?.[pendingAnswer]}
+  onConfirm={confirmAnswer}
+  onCancel={cancelFinalAnswer}
+/>
+
 <GameOverModal
-  isOpen={gameOver}
-   winner={currentPrize === 10000000}
-  amountWon={currentPrize}
-  onClose={handleGameOverClose}
+    isOpen={gameOver}
+    result={gameResult}
+    amountWon={currentPrize}
+    onClose={handleGameOverClose}
 />
     </div>
   );

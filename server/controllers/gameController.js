@@ -143,22 +143,35 @@ export const submitAnswer = async (req, res) => {
 //walk away
 
 export const walkAway = async (req, res) => {
+  try {
+    const { gameId } = req.body;
 
-  const { gameId } = req.body;
+    const game = await Game.findById(gameId);
 
-  const game = await Game.findById(gameId);
+    if (!game) {
+      return res.status(404).json({
+        success: false,
+        message: "Game not found",
+      });
+    }
 
-  game.completed = true;
-  game.gameStatus = "quit";
+    game.completed = true;
+    game.gameStatus = "quit";
 
-  await game.save();
+    await game.save();
 
-  res.json({
-    success: true,
-    amountWon: game.amountWon,
-    message: "You walked away safely!",
-  });
+    res.json({
+      success: true,
+      amountWon: game.amountWon,
+      message: "You walked away safely!",
+    });
 
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 //game  history
