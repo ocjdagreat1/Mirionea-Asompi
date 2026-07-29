@@ -12,17 +12,17 @@ const QuestionCard = ({
   answerLocked,
 }) => {
   return (
-    <div className="bg-blue-950/90 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border-2 border-blue-700">
+    <div className="bg-blue-950/90 backdrop-blur-sm rounded-3xl p-5 md:p-6 shadow-xl border-2 border-blue-700">
 
       {/* Question */}
-      <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 rounded-2xl p-6 border border-yellow-500 mb-8">
-        <h2 className="text-3xl font-bold text-center text-white">
+      <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 rounded-2xl p-4 mb-5 border border-yellow-500 ">
+        <h2 className="text-xl md:text-2xl font-bold text-center text-white">
           {question}
         </h2>
       </div>
 
       {/* Answers */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-2">
 
         {options.map((option, index) => {
 

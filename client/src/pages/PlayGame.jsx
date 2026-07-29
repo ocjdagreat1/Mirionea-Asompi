@@ -1,11 +1,6 @@
 import  { useEffect, useState, useRef }  from "react";
 import { toast } from "react-toastify";
-import { startGame, 
-  submitAnswer, 
-  walkAway, 
-  useFiftyFifty,
-  askAudience, 
- phoneFriend,} from "../services/gameService";
+import { startGame, submitAnswer, walkAway, useFiftyFifty, askAudience,phoneFriend,} from "../services/gameService";
 import Lifelines from "../components/LifeLines";
 import { useNavigate } from "react-router-dom";
 import AudienceModal from "../components/AudienceModal";
@@ -21,43 +16,59 @@ import WalkAwayModal from "../components/WalkAwayModal";
 import FinalAnswerModal from "../components/FinalAnswerModal";
 import SpotlightBackground from "../components/SpotlightBackground";
 import "../styles/spotlight.css";
-
+import useTransitions from "../hooks/useTransitions";
+import useStageEffects from "../hooks/useStageEffects"
+import useGame from "../hooks/useGame";
+import useStatusMessage from "../hooks/useStatusMessage"
+import useLifelines from "../hooks/useLifelines";
+import useAnswerFlow from "../hooks/useAnswerFlow";
 
 const PlayGame = () => {
 
 
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [gameId, setGameId] = useState("");
-  const [question, setQuestion] = useState(null);
-  const [currentQuestion, setCurrentQuestion] = useState(1);
-  //const [amountWon, setAmountWon] = useState(0);
-  const [currentPrize, setCurrentPrize] = useState(0);
-const [safePrize, setSafePrize] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [gameOver, setGameOver] = useState(false);
-const [remainingIndexes, setRemainingIndexes] = useState(null);
-const [fiftyUsed, setFiftyUsed] = useState(false);
-const [audienceUsed, setAudienceUsed] = useState(false);
-const [phoneUsed, setPhoneUsed] = useState(false);
-const [phoneAnswer, setPhoneAnswer] = useState("");
-const [phoneConfidence, setPhoneConfidence] = useState(0);
-const [phoneStage, setPhoneStage] = useState("calling");
-const [showPhoneModal, setShowPhoneModal] = useState(false);
-const [audiencePoll, setAudiencePoll] = useState(null);
-const [showAudience, setShowAudience] = useState(false);
-const [correctAnswer, setCorrectAnswer] = useState(null);
-const [showResult, setShowResult] = useState(false);
-const gameOverTimer = useRef(null);
+ const gameOverTimer = useRef(null);
 const [showWalkAwayModal, setShowWalkAwayModal] = useState(false);
 const [gameResult, setGameResult] = useState("");
-const [showFinalAnswer, setShowFinalAnswer] = useState(false);
-const [pendingAnswer, setPendingAnswer] = useState(null);
-const [answerLocked, setAnswerLocked] = useState(false);
-const [stageEffect, setStageEffect] = useState("normal");
-const [statusMessage, setStatusMessage] = useState("");
-const [statusType, setStatusType] = useState(""); // success, error, info
 
+
+const {sceneTransition,fadeOut,fadeIn,} = useTransitions();
+
+const {stageEffect, normal,locked,correct, wrong,} = useStageEffects();
+
+const {statusMessage,statusType,showStatus,} = useStatusMessage();
+
+const { gameId,setGameId, question,setQuestion,currentQuestion,setCurrentQuestion,
+currentPrize,setCurrentPrize,safePrize,setSafePrize,gameOver,setGameOver,
+} = useGame();
+
+const {selectedAnswer,setSelectedAnswer,
+correctAnswer,setCorrectAnswer,
+showResult,setShowResult,
+showFinalAnswer,setShowFinalAnswer,
+pendingAnswer,setPendingAnswer,
+answerLocked,setAnswerLocked,
+ handleAnswer, beginAnswerConfirmation,
+ handleWrongAnswer,handleCorrectAnswer,
+handleWinner,
+} = useAnswerFlow();
+
+const {
+    fiftyUsed,
+  audienceUsed,
+  phoneUsed,
+  remainingIndexes,
+  audiencePoll,showAudience,
+  phoneAnswer,phoneConfidence,
+  phoneStage,showPhoneModal,
+  setRemainingIndexes,
+  setShowAudience,
+  setShowPhoneModal,
+  handleFifty,
+  handleAudience,
+  handlePhoneFriend,
+} = useLifelines(gameId);
 
 //change theme
 useEffect(() => {
@@ -84,7 +95,7 @@ useEffect(() => {
         setCurrentPrize(0);
 setSafePrize(0);
 
-         // 🔊 Play game start sound
+         // Play game start sound
     soundManager.playEffect("/sounds/start.mp3");
 
     // 🎵 Start thinking music
@@ -115,96 +126,63 @@ useEffect(() => {
 }, []);
 
 
-//Handle answer
- const handleAnswer = (index) => {
-  if (selectedAnswer !== null || showFinalAnswer) return;
-
-  setPendingAnswer(index);
-  setSelectedAnswer(index); // Highlight the selected option
-  setShowFinalAnswer(true);
-};
 
 //confirm answer
 const confirmAnswer = async () => {
   setShowFinalAnswer(false);
   setAnswerLocked(true);
-  setStageEffect("locked");
+  locked();
 
- // Keep the selected answer highlighted
-  soundManager.playBackground("/sounds/thinking.mp3");
-  await new Promise((resolve) => setTimeout(resolve, 3000));
-
-  try {
-    const data = await submitAnswer(gameId, pendingAnswer);
-
+try {
+    const data = await beginAnswerConfirmation(
+        gameId,
+        submitAnswer,
+        soundManager
+    );
     setCorrectAnswer(data.correctAnswer);
     setShowResult(true);
 
-    // 👇 Paste the rest of your existing logic here
-    
-     if (!data.success) {
-      setStageEffect("wrong");
-  soundManager.stopAll();
-  soundManager.playEffect("/sounds/wrong.mp3");
-  //toast.error("Wrong Answer!");
-  showStatus("✖ Wrong Answer!", "error");
+    //handle wrong answer
+  const isWrong = handleWrongAnswer(data, {
+  wrong,
+  soundManager,
+  showStatus,
+  gameOverTimer,
+  setCurrentPrize,
+  safePrize,
+  setGameResult,
+  setGameOver,
+});
+if (isWrong) return;
 
-  gameOverTimer.current = setTimeout(() => {
-    soundManager.playEffect("/sounds/gameover.mp3");
+//handle winner function
+const isWinner = handleWinner(data, {
+  soundManager,
+  toast,
+  setCurrentPrize,
+  setSafePrize,
+  setGameResult,
+  setGameOver,
+});
 
-    setCurrentPrize(safePrize); // Player goes home with checkpoint money
-    setGameResult("wrong");
-    setGameOver(true);
-  }, 1500);
+if (isWinner) return;
 
-  return;
-}
-if (data.winner) {
-  soundManager.stopBackground();
-
-  soundManager.playEffect("/sounds/win.mp3");
-
-  toast.success("🎉 Congratulations! You won the game!");
-
-  setCurrentPrize(10000000);
-  setSafePrize(10000000);
-  setGameResult("winner");
-  setGameOver(true);
-
-  return;
-}
-     soundManager.stopAll();// Stop thinking music
-setStageEffect("correct");
-soundManager.playEffect("/sounds/correct.mp3");// Play correct answer sound
-showStatus("✔ Correct Answer!", "success");
-//toast.success("Correct Answer!");
-
-     setTimeout(() => {
-      
- const nextQuestion = currentQuestion + 1;
-
-setQuestion(data.nextQuestion);
-setCurrentQuestion(nextQuestion);
-
-setCurrentPrize(data.amountWon);
-
-// You just answered currentQuestion correctly
-const newSafePrize = getSafePrize(currentQuestion);
-setSafePrize(newSafePrize);
-
-setSelectedAnswer(null);
-setAnswerLocked(false);
-setPendingAnswer(null);
-setCorrectAnswer(null);
-setShowResult(false);
-setRemainingIndexes(null);
-
-setAnswerLocked(false);
-setStageEffect("normal");
-
-soundManager.playBackground("/sounds/thinking.mp3");
-
-}, 2500);
+//function to handle correct answer
+     handleCorrectAnswer(data, {
+  soundManager,
+  correct,
+  showStatus,
+  fadeOut,
+  fadeIn,
+  currentQuestion,
+  setQuestion,
+  setCurrentQuestion,
+  setCurrentPrize,
+  getSafePrize,
+  setSafePrize,
+  setRemainingIndexes,
+  normal,
+});
   } catch (error) {
     toast.error("Something went wrong");
   }
@@ -227,104 +205,13 @@ const handleTimeout = () => {
   // Show the timeout result immediately
   setCurrentPrize(safePrize);
   setGameResult("timeout");
-  setStageEffect("wrong");
+  wrong();
   setGameOver(true);
 
   
   
 };
 
-
-//handle 50 50
-const handleFifty = async () => {
-  try {
-    const data = await useFiftyFifty(gameId);
-
-    setRemainingIndexes(data.remainingIndexes);
-
-    setFiftyUsed(true);
-
-   soundManager.playEffect("/sounds/fifty_fifty.mp3");
-
-    showStatus("50:50 Activated", "info");
-
-  } catch (error) {
-    toast.error(error.response?.data?.message || "Unable to use 50:50");
-  }
-};
-
-//ask the audience function 
-const handleAudience = async () => {
-  try {
-    const data = await askAudience(gameId);
-
-    setAudiencePoll(data.poll);
-
-    setAudienceUsed(true);
-
-    setShowAudience(true);
-showStatus("Audience has voted!", "info");
-    //toast.success("Audience has voted!");
-
-  } catch (error) {
-    toast.error(
-      error.response?.data?.message || "Unable to use Audience lifeline"
-    );
-  }
-};
-
-
-//phone a friend function
-const handlePhoneFriend = async () => {
-  try {
-    const data = await phoneFriend(gameId);
-
-    setPhoneAnswer(data.answer);
-    setPhoneConfidence(data.confidence);
-
-    setPhoneUsed(true);
-
-    setPhoneStage("calling");
-    setShowPhoneModal(true);
-
-    // Calling...
-    setTimeout(() => {
-      setPhoneStage("ringing");
-      soundManager.playEffect("/sounds/ringing.mp3");
-    }, 500);
-
-    // Friend thinking
-    setTimeout(() => {
-  soundManager.stopEffect();// Stop the ringing sound
-//setPhoneStage("Hello");
-  setPhoneStage("thinking");
-
-}, 3500);
-    // Friend answers
-    setTimeout(() => {
-      setPhoneStage("speaking");
-    }, 6000);
-
-  } catch (error) {
-    toast.error(
-      error.response?.data?.message ||
-      "Unable to use Phone a Friend"
-    );
-  }
-};
-
-
-//show game question status
-
-const showStatus = (message, type = "info") => {
-  setStatusMessage(message);
-  setStatusType(type);
-
-  setTimeout(() => {
-    setStatusMessage("");
-    setStatusType("");
-  }, 2000);
-};
 
 //walk away function 
  const handleWalkAway = async () => {
@@ -387,7 +274,7 @@ const handleGameOverClose = () => {
 `}
   style={{
     backgroundImage: `url(${bgImage})`,
-    backgroundSize: "cover/contain",
+    backgroundSize: "cover",
     backgroundPosition: "center",
     backgroundRepeat: "no-repeat",
     backgroundAttachment: "fixed",
@@ -395,22 +282,22 @@ const handleGameOverClose = () => {
 >
 <SpotlightBackground />
 {/* Dark Overlay */}
-{/* Dark Overlay */}
-<div className="relative z-10 flex-1 bg-black/60 px-4 py-6 sm:px-6 lg:px-8">
+
+<div className="relative z-10 bg-black/60 px-3 py-3 sm:px-4 lg:px-5">
 
 
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-6xl mx-auto">
 
-        <h1 className="text-center text-2xl sm:text-3xl lg:text-5xl font-bold text-yellow-400 mb-4">
+       <h1 className="text-center text-lg sm:text-xl lg:text-3xl font-bold text-yellow-400 mb-3">
           Who Wants To Be A Millionaire
         </h1>
-  <div className="grid grid-cols-1 lg:grid-cols-4 gap-12 mt-8">
+  <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mt-4">
 
-   <div className="lg:col-span-3 flex">
- 
-  <div className="question-stage w-full bg-blue-950/90 backdrop-blur-md rounded-3xl border-2 border-blue-700 p-8 shadow-2xl">
+  <div className="lg:col-span-2 flex w-full">
 
-<div className="flex flex-wrap items-center justify-center gap-8 mb-8">
+ <div className="question-stage w-full bg-blue-950/90 backdrop-blur-md rounded-3xl border-2 border-blue-700 p-8 shadow-2xl">
+
+<div className="flex flex-wrap items-center justify-center gap-4 mb-5">
   <Timer
     question={question}
     gameOver={gameOver}
@@ -420,15 +307,14 @@ const handleGameOverClose = () => {
 
 
            <Lifelines
-    fiftyUsed={fiftyUsed}
-    audienceUsed={audienceUsed}
-    phoneUsed={phoneUsed}
-    onFifty={handleFifty}
-    onAudience={handleAudience}
-    onPhone={handlePhoneFriend}
-    disabled={showFinalAnswer || answerLocked}
-    
-  />
+  fiftyUsed={fiftyUsed}
+  audienceUsed={audienceUsed}
+  phoneUsed={phoneUsed}
+  onFifty={() => handleFifty(showStatus)}
+  onAudience={() => handleAudience(showStatus)}
+  onPhone={handlePhoneFriend}
+  disabled={showFinalAnswer || answerLocked}
+/>
   </div>
 
  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
@@ -443,10 +329,10 @@ const handleGameOverClose = () => {
       <div
         className={`
           animate-fadeIn
-          min-w-[240px]
+          min-w-[180px]
+          px-4
+          py-2
           text-center
-          px-6
-          py-3
           rounded-full
           font-bold
           shadow-xl
@@ -469,7 +355,17 @@ const handleGameOverClose = () => {
 
 </div>
 
-
+<div
+  className={`
+    transition-opacity
+    duration-700
+    ${
+      sceneTransition
+        ? "opacity-0"
+        : "opacity-100"
+    }
+  `}
+>
 <QuestionCard
 question={question.question}
   options={question.options}
@@ -481,8 +377,8 @@ question={question.question}
   showResult={showResult}
   answerLocked={answerLocked}
 />
-
-<div className="mt-8 flex flex-col sm:flex-row gap-4 justify-between items-center">
+</div>
+<div className="mt-5 flex flex-col sm:flex-row gap-3 justify-between items-center">
 
            <button
   disabled={showFinalAnswer || answerLocked}
@@ -509,17 +405,7 @@ question={question.question}
 </div>
 
    {/*prize ladder*/}
-  <div
-  className="
-    mt-8
-    flex justify-center
-    lg:mt-0
-    lg:block
-    lg:sticky
-    lg:top-6
-    self-start
-  "
->
+  <div className="lg:col-span-1 flex justify-center lg:justify-end">
     <PrizeLadder
         currentQuestion={currentQuestion}
     />

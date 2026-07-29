@@ -9,7 +9,7 @@ const AnswerOptions = ({
   disabled,
 }) => {
   let bgClass =
-    "bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 border-yellow-500 text-white hover:scale-105";
+    "bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 border-yellow-500 text-white hover:scale-[1.02]";
 
   // Correct answer turns GREEN
   if (showResult && correct) {
@@ -30,8 +30,10 @@ const AnswerOptions = ({
         overflow-hidden
         border-2
         rounded-full
-        px-6
-        py-5
+        px-5
+        py-3 
+        text-sm
+        md:text-base
         text-left
         font-bold
         transition-all
@@ -41,7 +43,7 @@ const AnswerOptions = ({
       `}
     >
       {/* Shine effect */}
-      <div className="absolute top-2 left-5 w-16 h-4 bg-white/20 rounded-full blur-md" />
+      <div className="absolute top-2 left-4 w-12 h-3 bg-white/20 rounded-full blur-md" />
 
       {/* Answer letter */}
       <span className="text-yellow-400 mr-3">

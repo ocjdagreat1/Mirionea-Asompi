@@ -1,14 +1,15 @@
+
 import prizeLadder from "../utils/prizeLadder";
 
 const PrizeLadder = ({ currentQuestion }) => {
   return (
-    <div className="w-72 bg-blue-950/90 backdrop-blur-md border-2 border-yellow-500 rounded-3xl shadow-2xl p-5">
+    <div className="w-56 md:w-60 bg-blue-950/90 backdrop-blur-md border-2 border-yellow-500 rounded-3xl shadow-2xl p-4">
 
-      <h2 className="text-center text-yellow-400 text-2xl font-bold mb-5">
+      <h2 className="text-center text-yellow-400 text-xl font-bold mb-3">
         Prize Ladder
       </h2>
 
-      <div className="space-y-2">
+      <div className="space-y-1">
 
         {[...prizeLadder].reverse().map((amount, index) => {
           const questionNumber = prizeLadder.length - index;
@@ -25,14 +26,15 @@ const PrizeLadder = ({ currentQuestion }) => {
               key={questionNumber}
               className={`
                 flex justify-between items-center
-                px-4 py-2
+                px-3 py-1.5
+                text-sm
                 rounded-full
                 font-bold
-                transition-all duration-300
+               transition-all duration-700 ease-in-out transform
 
                 ${
-                  isCurrent
-                    ? "bg-yellow-400 text-black scale-105 shadow-lg shadow-yellow-500/50"
+                 isCurrent
+  ? "bg-yellow-400 text-black shadow-2xl shadow-yellow-400/70 scale-105 animate-pulse ring-4 ring-yellow-300"
                     : isSafe
                     ? "bg-orange-500 text-white"
                     : "bg-blue-900 text-white hover:bg-blue-800"

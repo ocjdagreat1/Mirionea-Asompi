@@ -53,16 +53,14 @@ useEffect(() => {
     ((TOTAL_TIME - timeLeft) / TOTAL_TIME) * circumference;
 
   return (
-    <div className="flex justify-center mb-8">
-
-      <div className="relative w-40 h-40">
+    <div className="relative w-28 h-28 md:w-32 md:h-32">
 
         {/* Outer Glow */}
         <div className="absolute inset-0 rounded-full bg-yellow-400/20 blur-xl"></div>
 
         {/* SVG Circle */}
         <svg
-          className="w-40 h-40 rotate-[-90deg]"
+          className="w-full h-full -rotate-90"
           viewBox="0 0 140 140"
         >
           {/* Background Circle */}
@@ -97,10 +95,10 @@ useEffect(() => {
         {/* Timer Content */}
         <div className="absolute inset-0 flex flex-col justify-center items-center">
 
-          <FaRegClock className="text-yellow-400 text-3xl mb-2" />
+          <FaRegClock className="text-yellow-400 text-lg md:text-2xl mb-1" />
 
           <h2
-            className={`text-5xl font-bold ${
+            className={`text-3xl md:text-4xl font-bold ${
               timeLeft <= 10
                 ? "text-red-500 animate-pulse"
                 : "text-white"
@@ -109,7 +107,7 @@ useEffect(() => {
             {timeLeft}
           </h2>
 
-          <p className="text-gray-300 text-sm">
+          <p className="text-gray-300 text-xs">
             Seconds
           </p>
 
@@ -117,7 +115,7 @@ useEffect(() => {
 
       </div>
 
-    </div>
+    
   );
 };
 
