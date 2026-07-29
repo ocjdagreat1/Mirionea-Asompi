@@ -4,6 +4,7 @@ const AnswerOptions = ({
   selected,
   correct,
   showResult,
+  locked,
   onClick,
   disabled,
 }) => {
@@ -36,14 +37,18 @@ const AnswerOptions = ({
         transition-all
         duration-500
         ${bgClass}
+        ${locked && selected && !showResult ? "answer-locked" : ""}
       `}
     >
-      <div className="absolute top-2 left-5 w-16 h-4 bg-white/20 rounded-full blur-md"></div>
+      {/* Shine effect */}
+      <div className="absolute top-2 left-5 w-16 h-4 bg-white/20 rounded-full blur-md" />
 
+      {/* Answer letter */}
       <span className="text-yellow-400 mr-3">
         {String.fromCharCode(65 + index)}.
       </span>
 
+      {/* Answer text */}
       {option}
     </button>
   );

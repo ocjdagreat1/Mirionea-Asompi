@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { FaRegClock } from "react-icons/fa";
 import soundManager from "../utils/soundManager";
 
-const Timer = ({ question, gameOver, onTimeout }) => {
+const Timer = ({  question,
+  gameOver,
+  paused,
+  onTimeout, }) => {
   const TOTAL_TIME = 30;
 
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
@@ -12,25 +15,36 @@ const Timer = ({ question, gameOver, onTimeout }) => {
     setTimeLeft(TOTAL_TIME);
   }, [question]);
 
+  // Play warning sound from 8 seconds
+useEffect(() => {
+  if (
+    timeLeft <= 8 &&
+    timeLeft > 0 &&
+    !paused &&
+    !gameOver
+  ) {
+    soundManager.playEffect("/sounds/timeout.mp3");
+  }
+}, [timeLeft, paused, gameOver]);
+
   // Countdown
-  useEffect(() => {
-    if (gameOver) return;
+ useEffect(() => {
+  // Stop the timer when the game is over
+  // or when the Final Answer modal is open
+  if (gameOver || paused) return;
 
-    if (timeLeft <= 0) {
-      soundManager.stopBackground();
-      soundManager.playEffect("/sounds/timeout.mp3");
+  // Time has finished
+  if (timeLeft <= 0) {
+    onTimeout();
+    return;
+  }
 
-      onTimeout();
-      return;
-    }
+  const timer = setTimeout(() => {
+    setTimeLeft((prev) => prev - 1);
+  }, 1000);
 
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft, question, gameOver]);
-
+  return () => clearTimeout(timer);
+}, [timeLeft, gameOver, paused, onTimeout]);
   // Circle calculations
   const radius = 60;
   const circumference = 2 * Math.PI * radius;

@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 
 import { FaTrophy, FaTimesCircle, FaDoorOpen, FaClock } from "react-icons/fa";
+import Confetti from "react-confetti";
+import "../styles/fireworks.css";
+import soundManager from "../utils/soundManager";
 
 const GameOverModal = ({
   isOpen,
@@ -15,6 +18,8 @@ const GameOverModal = ({
   const isWinner = result === "winner";
   const isQuit = result === "quit";
   const isTimeout = result === "timeout";
+  const width = window.innerWidth;
+const height = window.innerHeight;
 
   const title = isWinner
     ? "🎉 YOU ARE A MILLIONAIRE!"
@@ -35,8 +40,12 @@ const GameOverModal = ({
 
 
   const [displayAmount, setDisplayAmount] = useState(0);
-    useEffect(() => {
+
+   useEffect(() => {
   if (!isOpen) return;
+
+  // Reset the counter every time the modal opens
+  setDisplayAmount(0);
 
   let start = 0;
   const duration = 1500;
@@ -52,12 +61,37 @@ const GameOverModal = ({
 
     setDisplayAmount(start);
   }, 20);
-
-  return () => clearInterval(timer);
+return () => clearInterval(timer);
 }, [isOpen, amountWon]);
+
+useEffect(() => {
+  if (isOpen && isWinner) {
+    soundManager.playEffect("/sounds/fireworks.mp3");
+  }
+}, [isOpen, isWinner]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fadeIn">
+     
+    {result === "winner" && (
+      <>
+      <Confetti
+        width={width}
+        height={height}
+        recycle={false}
+        numberOfPieces={500}
+        gravity={0.25}
+      />
+<div className="fireworks">
+      <div className="firework"></div>
+      <div className="firework"></div>
+      <div className="firework"></div>
+      <div className="firework"></div>
+      <div className="firework"></div>
+    </div>
+</>
+    )}
+ 
 
       <div
         className="
@@ -78,10 +112,11 @@ const GameOverModal = ({
         {/* Icon */}
         <div className="flex justify-center mb-6">
           {isWinner ? (
-            <FaTrophy
-              size={80}
-              className="text-yellow-400"
-            />
+      
+      <FaTrophy
+    size={90}
+className="text-yellow-400 animate-pulse drop-shadow-[0_0_25px_rgba(255,215,0,0.9)]"
+/>
           ) : isQuit ? (
             <FaDoorOpen
               size={80}
@@ -126,7 +161,7 @@ const GameOverModal = ({
             {isWinner ? "Grand Prize" : "Amount Won"}
           </p>
 
-          <h2 className="text-5xl font-bold text-yellow-400 mt-2 animate-pulse">
+          <h2 className="text-5xl font-bold text-yellow-400 mt-2 animate-bounce">
             ₦{displayAmount.toLocaleString()}
           </h2>
         </div>

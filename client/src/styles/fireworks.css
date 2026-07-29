@@ -1,0 +1,90 @@
+.fireworks {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 45;
+}
+
+.firework {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: explode 1.8s infinite;
+}
+
+.firework:nth-child(1) {
+  top: 20%;
+  left: 20%;
+  color: gold;
+  background: currentColor;
+  animation-delay: 0s;
+}
+
+.firework:nth-child(2) {
+  top: 30%;
+  left: 75%;
+  color: deepskyblue;
+  background: currentColor;
+  animation-delay: .4s;
+}
+
+.firework:nth-child(3) {
+  top: 65%;
+  left: 35%;
+  color: white;
+  background: currentColor;
+  animation-delay: .8s;
+}
+
+.firework:nth-child(4) {
+  top: 25%;
+  left: 55%;
+  color: orange;
+  background: currentColor;
+  animation-delay: 1.2s;
+}
+
+.firework:nth-child(5) {
+  top: 70%;
+  left: 80%;
+  color: violet;
+  background: currentColor;
+  animation-delay: 1.6s;
+}
+
+@keyframes explode {
+
+  0% {
+    transform: scale(.2);
+    opacity: 1;
+
+    box-shadow:
+      0 0 currentColor,
+      0 0 currentColor,
+      0 0 currentColor,
+      0 0 currentColor,
+      0 0 currentColor,
+      0 0 currentColor,
+      0 0 currentColor,
+      0 0 currentColor;
+  }
+
+  70% {
+    box-shadow:
+      0 -60px currentColor,
+      42px -42px currentColor,
+      60px 0 currentColor,
+      42px 42px currentColor,
+      0 60px currentColor,
+      -42px 42px currentColor,
+      -60px 0 currentColor,
+      -42px -42px currentColor;
+  }
+
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}

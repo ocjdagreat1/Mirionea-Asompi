@@ -63,3 +63,230 @@ transform:translate(-120px,-220px);
 }
 
 }
+
+/* Neon Question Stage */
+
+.question-stage {
+  position: relative;
+  border-color: rgba(59, 130, 246, 0.8);
+
+  animation: neonPulse 3s ease-in-out infinite;
+
+  box-shadow:
+    0 0 10px rgba(0, 140, 255, 0.35),
+    0 0 25px rgba(0, 100, 255, 0.2),
+    inset 0 0 20px rgba(0, 100, 255, 0.08);
+}
+
+@keyframes neonPulse {
+  0%,
+  100% {
+    border-color: rgba(59, 130, 246, 0.65);
+
+    box-shadow:
+      0 0 8px rgba(0, 140, 255, 0.3),
+      0 0 20px rgba(0, 100, 255, 0.15),
+      inset 0 0 15px rgba(0, 100, 255, 0.05);
+  }
+
+  50% {
+    border-color: rgba(96, 210, 255, 1);
+
+    box-shadow:
+      0 0 15px rgba(0, 180, 255, 0.65),
+      0 0 40px rgba(0, 120, 255, 0.4),
+      0 0 70px rgba(0, 80, 255, 0.2),
+      inset 0 0 25px rgba(0, 150, 255, 0.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .question-stage {
+    animation: none;
+  }
+}
+
+
+/* TV-style final answer lock animation */
+
+.answer-locked {
+  z-index: 10;
+
+  border-color: #f97316 !important;
+
+  animation:
+    answerLockPulse 0.8s ease-in-out infinite,
+    answerLockGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes answerLockPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+@keyframes answerLockGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 12px rgba(249, 115, 22, 0.7),
+      0 0 30px rgba(234, 88, 12, 0.4);
+  }
+
+  50% {
+    box-shadow:
+      0 0 25px rgba(251, 146, 60, 1),
+      0 0 55px rgba(249, 115, 22, 0.8),
+      0 0 85px rgba(234, 88, 12, 0.45);
+  }
+}
+
+/* ==================================
+   DRAMATIC TV STAGE LIGHTING
+================================== */
+
+.game-stage {
+  isolation: isolate;
+  transition:
+    box-shadow 0.7s ease,
+    filter 0.7s ease;
+}
+
+/* Lighting overlay */
+
+.game-stage::after {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  z-index: 0;
+
+  pointer-events: none;
+
+  opacity: 0;
+
+  transition:
+    opacity 0.6s ease,
+    background 0.6s ease;
+}
+
+/* Keep the actual game content above the lighting */
+
+
+
+
+/* Normal blue stage */
+
+.stage-normal::after {
+  opacity: 1;
+
+  background:
+    radial-gradient(
+      circle at 50% 45%,
+      rgba(0, 120, 255, 0.1),
+      transparent 65%
+    );
+}
+
+/* Final answer locked — orange suspense */
+
+.stage-locked::after {
+  opacity: 1;
+
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(255, 130, 0, 0.28),
+      transparent 65%
+    );
+
+  animation: stageLockedLight 1s ease-in-out infinite;
+}
+
+/* Correct answer — green flash */
+
+.stage-correct::after {
+  opacity: 1;
+
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(34, 197, 94, 0.38),
+      transparent 68%
+    );
+
+  animation: stageCorrectLight 1.5s ease-out;
+}
+
+/* Wrong answer or timeout — red flash */
+
+.stage-wrong::after {
+  opacity: 1;
+
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(239, 68, 68, 0.45),
+      transparent 68%
+    );
+
+  animation: stageWrongLight 0.7s ease-in-out 2;
+}
+
+/* Orange suspense pulse */
+
+@keyframes stageLockedLight {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Green success flash */
+
+@keyframes stageCorrectLight {
+  0% {
+    opacity: 0;
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.55;
+  }
+}
+
+/* Red failure flash */
+
+@keyframes stageWrongLight {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Accessibility */
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-locked::after,
+  .stage-correct::after,
+  .stage-wrong::after {
+    animation: none;
+  }
+}

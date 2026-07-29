@@ -22,6 +22,7 @@ import FinalAnswerModal from "../components/FinalAnswerModal";
 import SpotlightBackground from "../components/SpotlightBackground";
 import "../styles/spotlight.css";
 
+
 const PlayGame = () => {
 
 
@@ -53,6 +54,9 @@ const [gameResult, setGameResult] = useState("");
 const [showFinalAnswer, setShowFinalAnswer] = useState(false);
 const [pendingAnswer, setPendingAnswer] = useState(null);
 const [answerLocked, setAnswerLocked] = useState(false);
+const [stageEffect, setStageEffect] = useState("normal");
+const [statusMessage, setStatusMessage] = useState("");
+const [statusType, setStatusType] = useState(""); // success, error, info
 
 
 //change theme
@@ -124,6 +128,7 @@ useEffect(() => {
 const confirmAnswer = async () => {
   setShowFinalAnswer(false);
   setAnswerLocked(true);
+  setStageEffect("locked");
 
  // Keep the selected answer highlighted
   soundManager.playBackground("/sounds/thinking.mp3");
@@ -138,9 +143,11 @@ const confirmAnswer = async () => {
     // 👇 Paste the rest of your existing logic here
     
      if (!data.success) {
+      setStageEffect("wrong");
   soundManager.stopAll();
   soundManager.playEffect("/sounds/wrong.mp3");
-  toast.error("Wrong Answer!");
+  //toast.error("Wrong Answer!");
+  showStatus("✖ Wrong Answer!", "error");
 
   gameOverTimer.current = setTimeout(() => {
     soundManager.playEffect("/sounds/gameover.mp3");
@@ -166,12 +173,11 @@ if (data.winner) {
 
   return;
 }
-     // Stop thinking music
-soundManager.stopAll();
-
-// Play correct answer sound
-soundManager.playEffect("/sounds/correct.mp3");
-toast.success("Correct Answer!");
+     soundManager.stopAll();// Stop thinking music
+setStageEffect("correct");
+soundManager.playEffect("/sounds/correct.mp3");// Play correct answer sound
+showStatus("✔ Correct Answer!", "success");
+//toast.success("Correct Answer!");
 
      setTimeout(() => {
       
@@ -193,6 +199,9 @@ setCorrectAnswer(null);
 setShowResult(false);
 setRemainingIndexes(null);
 
+setAnswerLocked(false);
+setStageEffect("normal");
+
 soundManager.playBackground("/sounds/thinking.mp3");
 
 }, 2500);
@@ -210,21 +219,20 @@ const cancelFinalAnswer = () => {
 
 //Timer
 const handleTimeout = () => {
+  
+  if (gameOver) return;// Prevent the timeout function from running again
+
   soundManager.stopAll();
 
-  soundManager.playEffect(
-    "/sounds/timeout.mp3",
-    1,
-    () => {
-      soundManager.playEffect("/sounds/gameover.mp3");
+  // Show the timeout result immediately
+  setCurrentPrize(safePrize);
+  setGameResult("timeout");
+  setStageEffect("wrong");
+  setGameOver(true);
 
-      setCurrentPrize(safePrize);
-      setGameResult("timeout");
-      setGameOver(true);
-    }
-  );
+  
+  
 };
-
 
 
 //handle 50 50
@@ -238,7 +246,7 @@ const handleFifty = async () => {
 
    soundManager.playEffect("/sounds/fifty_fifty.mp3");
 
-    toast.success("50:50 Activated!");
+    showStatus("50:50 Activated", "info");
 
   } catch (error) {
     toast.error(error.response?.data?.message || "Unable to use 50:50");
@@ -255,8 +263,8 @@ const handleAudience = async () => {
     setAudienceUsed(true);
 
     setShowAudience(true);
-
-    toast.success("Audience has voted!");
+showStatus("Audience has voted!", "info");
+    //toast.success("Audience has voted!");
 
   } catch (error) {
     toast.error(
@@ -306,7 +314,17 @@ const handlePhoneFriend = async () => {
 };
 
 
+//show game question status
 
+const showStatus = (message, type = "info") => {
+  setStatusMessage(message);
+  setStatusType(type);
+
+  setTimeout(() => {
+    setStatusMessage("");
+    setStatusType("");
+  }, 2000);
+};
 
 //walk away function 
  const handleWalkAway = async () => {
@@ -329,7 +347,7 @@ const handlePhoneFriend = async () => {
 );
         setCurrentPrize(data.amountWon);
 
-        toast.success(data.message);
+        showStatus(data.message, "success");
 
     } catch (error) {
         toast.error("Unable to walk away");
@@ -359,7 +377,14 @@ const handleGameOverClose = () => {
 
   return (
    <div
-   className="relative min-h-screen w-full overflow-hidden"
+   className={`
+  game-stage
+  stage-${stageEffect}
+  relative
+  min-h-screen
+  w-full
+  overflow-hidden
+`}
   style={{
     backgroundImage: `url(${bgImage})`,
     backgroundSize: "cover/contain",
@@ -370,7 +395,8 @@ const handleGameOverClose = () => {
 >
 <SpotlightBackground />
 {/* Dark Overlay */}
-<div className="flex-1 bg-black/60 px-4 py-6 sm:px-6 lg:px-8">
+{/* Dark Overlay */}
+<div className="relative z-10 flex-1 bg-black/60 px-4 py-6 sm:px-6 lg:px-8">
 
 
       <div className="max-w-7xl mx-auto">
@@ -378,16 +404,17 @@ const handleGameOverClose = () => {
         <h1 className="text-center text-2xl sm:text-3xl lg:text-5xl font-bold text-yellow-400 mb-4">
           Who Wants To Be A Millionaire
         </h1>
-  <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8 mt-6">
-    <div className="lg:col-span-3">
-  <div className="bg-blue-950/90 backdrop-blur-md rounded-3xl border-2 border-blue-700 p-8 shadow-2xl">
+  <div className="grid grid-cols-1 lg:grid-cols-4 gap-12 mt-8">
 
+   <div className="lg:col-span-3 flex">
+ 
+  <div className="question-stage w-full bg-blue-950/90 backdrop-blur-md rounded-3xl border-2 border-blue-700 p-8 shadow-2xl">
 
-  <div className="flex flex-wrap items-center justify-center gap-8 mb-8">
+<div className="flex flex-wrap items-center justify-center gap-8 mb-8">
   <Timer
     question={question}
     gameOver={gameOver}
-    paused={showFinalAnswer}
+    paused={showFinalAnswer || answerLocked}
     onTimeout={handleTimeout}
   />
 
@@ -403,9 +430,46 @@ const handleGameOverClose = () => {
     
   />
   </div>
-  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-center lg:text-left mb-4">
+
+ <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
+
+  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-center lg:text-left">
     Question {currentQuestion} of 15
   </h2>
+
+  <div className="mt-4 lg:mt-0 h-12 flex items-center justify-center lg:justify-end">
+
+    {statusMessage && (
+      <div
+        className={`
+          animate-fadeIn
+          min-w-[240px]
+          text-center
+          px-6
+          py-3
+          rounded-full
+          font-bold
+          shadow-xl
+          border-2
+          ${
+            statusType === "success"
+              ? "bg-green-600 border-green-300 text-white"
+              : statusType === "error"
+              ? "bg-red-600 border-red-300 text-white"
+              : "bg-yellow-500 border-yellow-300 text-black"
+          }
+        `}
+      >
+        {statusMessage}
+      </div>
+    )}
+
+
+  </div>
+
+</div>
+
+
 <QuestionCard
 question={question.question}
   options={question.options}
@@ -415,6 +479,7 @@ question={question.question}
   remainingIndexes={remainingIndexes}
   correctAnswer={correctAnswer}
   showResult={showResult}
+  answerLocked={answerLocked}
 />
 
 <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-between items-center">
@@ -444,12 +509,20 @@ question={question.question}
 </div>
 
    {/*prize ladder*/}
-   <div className="lg:col-span-1 lg:sticky lg:top-6 self-start">
-
+  <div
+  className="
+    mt-8
+    flex justify-center
+    lg:mt-0
+    lg:block
+    lg:sticky
+    lg:top-6
+    self-start
+  "
+>
     <PrizeLadder
         currentQuestion={currentQuestion}
     />
-
 </div>
 
         </div>
