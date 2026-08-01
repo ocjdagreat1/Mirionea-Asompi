@@ -1,6 +1,7 @@
 class SoundManager {
   constructor() {
     this.background = null;
+    this.currentTrack = null;
     this.effects = [];
   }
 
@@ -8,10 +9,15 @@ class SoundManager {
   // Background Music
   // ==========================
   playBackground(src, loop = true, volume = 0.5) {
+    // Don't restart the same track
+    if (this.currentTrack === src && this.background) {
+      return;
+    }
+
     this.stopBackground();
 
+    this.currentTrack = src;
     this.background = new Audio(src);
-    this.background.src = src;
     this.background.loop = loop;
     this.background.volume = volume;
 
@@ -24,33 +30,32 @@ class SoundManager {
     this.background.pause();
     this.background.currentTime = 0;
     this.background = null;
+    this.currentTrack = null;
   }
 
   // ==========================
   // Sound Effects
   // ==========================
   playEffect(src, volume = 1, onEnded = null) {
-  const audio = new Audio(src);
+    const audio = new Audio(src);
+    audio.volume = volume;
 
-  audio.src = src;
-  audio.volume = volume;
+    audio.play().catch(() => {});
 
-  audio.play().catch(() => {});
+    this.effects.push(audio);
 
-  this.effects.push(audio);
+    audio.onended = () => {
+      this.effects = this.effects.filter(
+        effect => effect !== audio
+      );
 
-  audio.onended = () => {
-    this.effects = this.effects.filter(
-      effect => effect !== audio
-    );
+      if (onEnded) {
+        onEnded();
+      }
+    };
 
-    if (onEnded) {
-      onEnded();
-    }
-  };
-
-  return audio;
-}
+    return audio;
+  }
 
   stopEffect() {
     this.effects.forEach(effect => {
@@ -87,6 +92,17 @@ class SoundManager {
     if (this.background) {
       this.background.play().catch(() => {});
     }
+  }
+
+  // ==========================
+  // Helpers
+  // ==========================
+  isPlaying(src) {
+    return this.currentTrack === src;
+  }
+
+  getCurrentTrack() {
+    return this.currentTrack;
   }
 
   // ==========================

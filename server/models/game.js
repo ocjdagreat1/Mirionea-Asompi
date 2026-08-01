@@ -60,7 +60,7 @@ const gameSchema = new mongoose.Schema(
 
     gameStatus: {
       type: String,
-      enum: ["playing", "won", "lost", "quit"],
+      enum: ["playing", "won", "lost", "quit","timeout",],
       default: "playing",
     },
 

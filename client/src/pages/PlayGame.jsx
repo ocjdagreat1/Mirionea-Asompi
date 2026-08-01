@@ -1,6 +1,6 @@
 import  { useEffect, useState, useRef }  from "react";
 import { toast } from "react-toastify";
-import { startGame, submitAnswer, walkAway, useFiftyFifty, askAudience,phoneFriend,} from "../services/gameService";
+import { startGame, submitAnswer, walkAway,   timeoutGame,useFiftyFifty, askAudience,phoneFriend,} from "../services/gameService";
 import Lifelines from "../components/LifeLines";
 import { useNavigate } from "react-router-dom";
 import AudienceModal from "../components/AudienceModal";
@@ -69,6 +69,16 @@ const {
   handleAudience,
   handlePhoneFriend,
 } = useLifelines(gameId);
+
+const getStage = (question) => {
+    if (question <= 5) return 1;
+    if (question <= 10) return 2;
+    if (question <= 14) return 3;
+    return 4;
+};
+const [stage, setStage] = useState(1);
+
+
 
 //change theme
 useEffect(() => {
@@ -196,22 +206,24 @@ const cancelFinalAnswer = () => {
 };
 
 //Timer
-const handleTimeout = () => {
-  
-  if (gameOver) return;// Prevent the timeout function from running again
+const handleTimeout = async () => {
+  if (gameOver) return;
 
   soundManager.stopAll();
 
-  // Show the timeout result immediately
-  setCurrentPrize(safePrize);
-  setGameResult("timeout");
-  wrong();
-  setGameOver(true);
+  try {
+    const data = await timeoutGame(gameId);
 
-  
-  
+    setCurrentPrize(data.amountWon);
+    setGameResult("timeout");
+
+    wrong();
+
+    setGameOver(true);
+  } catch (error) {
+    toast.error("Failed to end game");
+  }
 };
-
 
 //walk away function 
  const handleWalkAway = async () => {
@@ -240,7 +252,59 @@ const handleTimeout = () => {
         toast.error("Unable to walk away");
     }
 };
-  //handle game over function
+
+
+
+
+//handle music question stages
+const handleStageTransition = (nextStageMusic) => {
+  soundManager.stopBackground();
+
+  const transition = new Audio("/sounds/check-point.mp3");
+  transition.volume = 0.4;
+
+  transition.onended = () => {
+    soundManager.playBackground(nextStageMusic);
+  };
+
+  transition.play().catch(() => {});
+};
+
+useEffect(() => {
+    console.log("Stage changed:", stage);
+
+    switch (stage) {
+        case 1:
+            soundManager.playBackground("/sounds/thinking.mp3");
+            break;
+
+        case 2:
+            handleStageTransition("/sounds/medium-thinking.mp3");
+            break;
+
+        case 3:
+            handleStageTransition("/sounds/hard-thinking.mp3");
+            break;
+
+        case 4:
+            handleStageTransition("/sounds/final-thinking.mp3");
+            break;
+
+        default:
+            break;
+    }
+}, [stage]);
+
+
+useEffect(() => {
+    const newStage = getStage(currentQuestion);
+
+    if (newStage !== stage) {
+        setStage(newStage);
+    }
+}, [currentQuestion]);
+  
+//handle game over function
 const handleGameOverClose = () => {
   if (gameOverTimer.current) {
     clearTimeout(gameOverTimer.current);

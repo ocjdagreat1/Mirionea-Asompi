@@ -22,6 +22,14 @@ export const walkAway = async (gameId) => {
   return response.data;
 };
 
+//timeout services
+export const timeoutGame = async (gameId) => {
+  const { data } = await api.post("/game/timeout", {
+    gameId,
+  });
+
+  return data;
+};
 
 export const useFiftyFifty = async (gameId) => {
   const { data } = await api.post("/game/fifty", {

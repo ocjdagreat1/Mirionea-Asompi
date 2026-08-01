@@ -168,7 +168,7 @@ const handleCorrectAnswer = (
 
       fadeIn();
 
-      soundManager.playBackground("/sounds/thinking.mp3");
+      //soundManager.playBackground("/sounds/thinking.mp3");
 
     }, 700);
 

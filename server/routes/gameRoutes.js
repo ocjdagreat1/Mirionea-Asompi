@@ -5,6 +5,7 @@ import {
   startGame,
   submitAnswer,
   walkAway,
+  timeoutGame,
   gameHistory,
    useFiftyFifty,
     askAudience,
@@ -21,6 +22,7 @@ router.post("/audience", protect, askAudience);
 router.post("/phone", protect, phoneFriend);
 
 router.post("/walkaway", protect, walkAway);
+router.post("/timeout", protect, timeoutGame);
 
 router.get("/history", protect, gameHistory);
 

@@ -8,10 +8,10 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const login = (token) => {
-    localStorage.setItem("token", token);
-    fetchProfile();
-  };
+  const login = async (token) => {
+  localStorage.setItem("token", token);
+  await fetchProfile();
+};
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -19,6 +19,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const fetchProfile = async () => {
+     setLoading(true);
   try {
     const data = await getProfile();
 

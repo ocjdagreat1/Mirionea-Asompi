@@ -1,6 +1,21 @@
 import Game from "../models/game.js";
 import Question from "../models/question.js";
 import prizeLadder from "../utils/prizeLadder.js";
+import User from "../models/user.js";
+
+
+const updateUserStats = async (userId, amountWon) => {
+  const user = await User.findById(userId);
+
+  if (!user) return;
+user.gamesPlayed = (user.gamesPlayed || 0) + 1;
+// Update highest prize only if the new prize is higher
+if (amountWon > (user.highestPrize || 0)) {
+  user.highestPrize = amountWon;
+}
+
+  await user.save();
+};
 
 // Start a new game
 export const startGame = async (req, res) => {
@@ -93,6 +108,7 @@ export const submitAnswer = async (req, res) => {
       game.completed = true;
       game.gameStatus = "lost";
       await game.save();
+      await updateUserStats(game.user, game.amountWon);
 
       return res.json({
         success: false,
@@ -110,6 +126,7 @@ export const submitAnswer = async (req, res) => {
       game.completed = true;
       game.gameStatus = "won";
       await game.save();
+      await updateUserStats(game.user, game.amountWon);
 
       return res.json({
         success: true,
@@ -157,8 +174,8 @@ export const walkAway = async (req, res) => {
 
     game.completed = true;
     game.gameStatus = "quit";
-
     await game.save();
+await updateUserStats(game.user, game.amountWon);
 
     res.json({
       success: true,
@@ -173,6 +190,55 @@ export const walkAway = async (req, res) => {
     });
   }
 };
+
+
+// Timeout
+export const timeoutGame = async (req, res) => {
+  try {
+    const { gameId } = req.body;
+
+    const game = await Game.findById(gameId);
+
+    if (!game) {
+      return res.status(404).json({
+        success: false,
+        message: "Game not found",
+      });
+    }
+
+    // Prevent updating an already completed game
+    if (game.completed) {
+      return res.status(400).json({
+        success: false,
+        message: "Game already completed",
+      });
+    }
+
+    game.completed = true;
+    game.gameStatus = "timeout";
+
+    await game.save();
+
+    // Update leaderboard stats
+    await updateUserStats(game.user, game.amountWon);
+
+    res.status(200).json({
+      success: true,
+      amountWon: game.amountWon,
+      message: "Time is up!",
+    });
+
+  } catch (error) {
+  console.error("Timeout Error:", error);
+  console.log(req.body);
+
+  res.status(500).json({
+    success: false,
+    message: error.message,
+  });
+}
+};
+
 
 //game  history
 export const gameHistory = async (req, res) => {

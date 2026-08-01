@@ -8,10 +8,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({email: "",password: "",});
 
   const [loading, setLoading] = useState(false);
 
@@ -30,7 +27,7 @@ const Login = () => {
 
       const data = await loginUser(formData);
 
-      login(data.token);
+     await login(data.token);
 
       toast.success("Login successful!");
 
