@@ -3,6 +3,7 @@ import { FaTrophy, FaMedal, FaCrown } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { getLeaderboard } from "../services/leaderboardService";
 import { toast } from "react-toastify";
+import Sparkles from "../components/Sparkles";
 //import LeaderboardCard from "../components/LeaderboardCard";
 
 const Leaderboard = () => {
@@ -24,11 +25,11 @@ const Leaderboard = () => {
     fetchLeaderboard();
   }, []);
 
-  const formatMoney = (amount) => `₦${amount.toLocaleString()}`;
+  const formatMoney = (amount) => `₦ ${amount.toLocaleString()}`;
 
   if (loading) {
     return (
-     <div className="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,#1d4ed8_0%,#0f172a_45%,#020617_100%)]">
+     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#1d4ed8_0%,#0f172a_45%,#020617_100%)] py-10 px-4 pb-20">
         <motion.div
           animate={{ scale: [1, 1.15, 1] }}
           transition={{ repeat: Infinity, duration: 1.2 }}
@@ -75,33 +76,126 @@ to-amber-700
 shadow-[0_0_80px_rgba(255,215,0,.55)]
 border-[3px] border-yellow-100"
           >
+             {/* STEP 1: Shimmer Layer */}
+  <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <div
+      className="
+        absolute
+        top-0
+        left-0
+        h-full
+        w-24
+        rotate-12
+        bg-gradient-to-r
+        from-transparent
+        via-white/40
+        to-transparent
+        animate-shimmer
+      "
+    />
+  </div>
 
-            <div className="absolute right-6 top-6 text-yellow-100 text-6xl opacity-40">
-              <FaCrown />
-            </div>
+
+  <div className="absolute top-5 right-5 opacity-40 pointer-events-none">
+    <FaCrown className="text-yellow-100 text-6xl" />
+</div>
 
             <div className="p-10 text-center">
+<motion.div
+  animate={{
+  y: [0, -6, 0],
+  rotate: [-2, 2, -2],
+}}
+  transition={{
+  repeat: Infinity,
+  duration: 3,
+  ease: "easeInOut",
+}}
+>
+<div className="relative inline-flex items-center justify-center w-40 h-40">
 
-              <motion.div
-                animate={{ y: [0, -8, 0] }}
-                transition={{
-                  repeat: Infinity,
-                  duration: 1.5,
-                }}
-              >
-               <FaTrophy className="mx-auto text-7xl text-yellow-50 drop-shadow-[0_0_30px_gold] mb-5" />
-              </motion.div>
+  {/* Rotating Halo */}
+  <motion.div
+    animate={{ rotate: 360 }}
+    transition={{
+      duration: 18,
+      repeat: Infinity,
+      ease: "linear",
+    }}
+    className="
+      absolute
+      w-28
+      h-28
+      rounded-full
+      border-2
+      border-yellow-200/40
+      shadow-[0_0_30px_rgba(255,215,0,.5)]
+    "
+  />
 
-              <p className="uppercase tracking-[8px] text-slate-900 font-extrabold">
-                Champion
-              </p>
+  <motion.div
+  className="
+    absolute
+    w-24
+    h-24
+    rounded-full
+    bg-yellow-300/20
+    blur-2xl
+  "
+  animate={{
+    scale: [1, 1.3, 1],
+    opacity: [0.3, 0.6, 0.3],
+  }}
+  transition={{
+    duration: 3,
+    repeat: Infinity,
+  }}
+/>
 
+  {/* Inner Glow */}
+  <div
+    className="
+      absolute
+      w-20
+      h-20
+      rounded-full
+      bg-yellow-200/20
+      blur-xl
+    "
+  />
+
+  <Sparkles />
+
+  <FaTrophy
+    className="relative z-10 text-7xl text-yellow-50 drop-shadow-[0_0_25px_gold]"
+  />
+
+</div>
+
+</motion.div>
+
+             <p
+  className="
+    uppercase
+    tracking-[8px]
+    font-extrabold
+    bg-gradient-to-r
+    from-yellow-100
+    via-white
+    to-yellow-100
+    bg-clip-text
+    text-transparent
+    drop-shadow-lg
+  "
+>
+  CHAMPION
+</p>
               <h2 className="text-4xl md:text-5xl font-black text-slate-900 mt-3 drop-shadow-md">
                 {leaders[0].name}
               </h2>
 
              <p className="text-3xl font-extrabold text-white drop-shadow-lg mt-4">
-                {formatMoney(leaders[0].highestPrize)}
+                {formatMoney (leaders[0].highestPrize)}
               </p>
 
              <p className="mt-3 text-slate-900 font-bold">
@@ -217,7 +311,7 @@ border-[3px] border-yellow-100"
 
     {/* Prize */}
     <div className="col-span-4 text-yellow-300 drop-shadow-[0_0_10px_gold] font-extrabold text-xs sm:text-base md:text-lg break-words">
-      {formatMoney(player.highestPrize)}
+      {formatMoney (player.highestPrize)}
     </div>
 
     {/* Games */}

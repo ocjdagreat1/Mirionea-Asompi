@@ -4,18 +4,40 @@ import prizeLadder from "../utils/prizeLadder.js";
 import User from "../models/user.js";
 
 
-const updateUserStats = async (userId, amountWon) => {
+const updateUserStats = async (
+  userId,
+  {
+    amountWon,
+    questionsAnswered = 0,
+    correctAnswers = 0,
+    bestStreak = 0,
+     won = false,
+  }
+) => {
   const user = await User.findById(userId);
 
   if (!user) return;
-user.gamesPlayed = (user.gamesPlayed || 0) + 1;
-// Update highest prize only if the new prize is higher
-if (amountWon > (user.highestPrize || 0)) {
-  user.highestPrize = amountWon;
+
+  user.gamesPlayed += 1;
+  if (won) {
+  user.gamesWon += 1;
 }
+
+  user.questionsAnswered += questionsAnswered;
+
+  user.correctAnswers += correctAnswers;
+
+  if (bestStreak > user.bestStreak) {
+    user.bestStreak = bestStreak;
+  }
+
+  if (amountWon > user.highestPrize) {
+    user.highestPrize = amountWon;
+  }
 
   await user.save();
 };
+
 
 // Start a new game
 export const startGame = async (req, res) => {
@@ -79,6 +101,7 @@ export const startGame = async (req, res) => {
         });
     }
 };
+
 //submit answer
 export const submitAnswer = async (req, res) => {
 
@@ -105,28 +128,50 @@ export const submitAnswer = async (req, res) => {
     });
 
     if (!isCorrect) {
-      game.completed = true;
-      game.gameStatus = "lost";
-      await game.save();
-      await updateUserStats(game.user, game.amountWon);
 
-      return res.json({
-        success: false,
-        message: "Wrong Answer",
-        amountWon: game.amountWon,
-        correctAnswer,
-      });
-    }
+  // Save the streak before resetting it
+  const bestStreak = game.currentStreak;
 
+  game.currentStreak = 0;
+  game.completed = true;
+  game.gameStatus = "lost";
+
+  await game.save();
+
+  await updateUserStats(game.user, {
+    amountWon: game.amountWon,
+    questionsAnswered: game.answers.length,
+    correctAnswers: game.score,
+    bestStreak,
+  });
+
+  return res.json({
+    success: false,
+    message: "Wrong Answer",
+    amountWon: game.amountWon,
+    correctAnswer,
+  });
+}
+
+    game.currentStreak += 1;
     game.score += 1;
     game.amountWon = question.prize;
     game.currentQuestion += 1;
 
     if (game.currentQuestion === 15) {
+      game.currentStreak = 0;
       game.completed = true;
       game.gameStatus = "won";
       await game.save();
-      await updateUserStats(game.user, game.amountWon);
+
+
+     await updateUserStats(game.user, {
+  amountWon: game.amountWon,
+  questionsAnswered: game.answers.length,
+  correctAnswers: game.score,
+  bestStreak: game.currentStreak,
+   won: true,
+});
 
       return res.json({
         success: true,
@@ -175,7 +220,14 @@ export const walkAway = async (req, res) => {
     game.completed = true;
     game.gameStatus = "quit";
     await game.save();
-await updateUserStats(game.user, game.amountWon);
+
+await updateUserStats(game.user, { amountWon: game.amountWon,
+  questionsAnswered: game.answers.length,
+  correctAnswers: game.score,
+  bestStreak: game.currentStreak,
+});
+
+
 
     res.json({
       success: true,
@@ -220,7 +272,12 @@ export const timeoutGame = async (req, res) => {
     await game.save();
 
     // Update leaderboard stats
-    await updateUserStats(game.user, game.amountWon);
+    await updateUserStats(game.user, {
+  amountWon: game.amountWon,
+  questionsAnswered: game.answers.length,
+  correctAnswers: game.score,
+  bestStreak: game.currentStreak,
+});
 
     res.status(200).json({
       success: true,

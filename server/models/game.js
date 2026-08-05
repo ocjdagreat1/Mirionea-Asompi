@@ -41,6 +41,11 @@ const gameSchema = new mongoose.Schema(
       default: 0,
     },
 
+    currentStreak: {
+    type: Number,
+    default: 0,
+},
+
     lifelines: {
       fiftyFifty: {
         type: Boolean,

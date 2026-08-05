@@ -14,6 +14,7 @@ import PlayGame from "./pages/PlayGame";
 import Leaderboard from "./pages/Leaderboard";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
+import GameSummary from "./pages/GameSummary";
 import NotFound from "./pages/NotFound";
 
 
@@ -59,7 +60,7 @@ function App() {
       </ProtectedRoute>
     }
   />
-
+<Route path="/game-summary" element={<GameSummary />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
 <Footer />

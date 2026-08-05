@@ -59,3 +59,18 @@ body {
 .animate-scaleIn {
   animation: scaleIn .4s ease;
 }
+
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-150%) rotate(12deg);
+  }
+
+  100% {
+    transform: translateX(250%) rotate(12deg);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s linear infinite;
+}
